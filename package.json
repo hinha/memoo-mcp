@@ -1,0 +1,41 @@
+{
+  "name": "memoo-mcp",
+  "version": "1.0.0",
+  "description": "Memoo MCP Gateway — knowledge graph RAG via Model Context Protocol",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "memoo-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "serve": "tsx src/index.ts serve",
+    "serve:prod": "node dist/index.js serve",
+    "dev": "tsx src/index.ts serve",
+    "stdio": "tsx src/index.ts --stdio",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test 'src/**/*.test.ts'"
+  },
+  "keywords": [
+    "mcp",
+    "memoo",
+    "knowledge-graph",
+    "rag"
+  ],
+  "author": "hinha",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.23",
+    "@types/node": "^22.15.30",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

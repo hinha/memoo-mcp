@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "memoo": {
+      "command": "node",
+      "args": [
+        "/Users/hinha/Projects/hinha/memoo-mcp/dist/index.js",
+        "--memoo-base-url",
+        "https://memoo.hinha.web.id",
+        "--memo-namespace",
+        "0b00322d-f6ed-45b7-a2e8-b7059f71de34",
+        "--timeout",
+        "600s"
+      ],
+      "env": {
+        "MEMOO_API_KEY": "moo_sk_xxx"
+      }
+    }
+  }
+}
