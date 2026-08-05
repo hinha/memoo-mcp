@@ -330,7 +330,8 @@ IMPORTANT: Before calling this tool, you MUST summarize the content to key facts
 
 Word limit is enforced by the Memoo API (entitlement dimension episode_content_words from the caller's plan; config fallback typically 1200). Plan catalog examples: free≈300, lite/pro≈500, max≈5000. Prefer ≤300 words for sync-friendly ingest. If the API returns 413 / "Content too long", summarize further and retry.
 
-ASYNC OPERATION: Often returns a job_id. You MUST then call memoo_get_job_status until 'completed' or 'failed':
+ASYNC OPERATION: When async ingest is enabled on Memoo, this returns a job_id quickly. You MUST then call memoo_get_job_status until 'completed' or 'failed' (entity extraction may take 1–3+ minutes). Do not bypass MCP with raw HTTP.
+
 1. memoo_create_episode → job_id
 2. memoo_get_job_status(job_id) until completed/failed
 3. If completed, result may include episode_id`,
