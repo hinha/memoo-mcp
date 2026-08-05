@@ -125,8 +125,8 @@ HTTP-only: `MEMOO_HOST` / `MEMOO_PORT` (default `127.0.0.1:8787`). MCP HTTP path
 | `memoo_ask` | RAG Q&A |
 | `memoo_graph_traverse` | Graph hops from `entity_uuid` |
 | `memoo_temporal_query` | Point-in-time query |
-| `memoo_create_episode` | Async ingest → `job_id` (summarize first; word max = API plan `episode_content_words`) |
-| `memoo_get_job_status` | Poll ingest job |
+| `memoo_create_episode` | Always async → `job_id` (summarize first; word max = API plan `episode_content_words`) |
+| `memoo_get_job_status` | Required after every create — poll until completed/failed |
 | `memoo_delete_episode` | Delete episode |
 
 ## Resources

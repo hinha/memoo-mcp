@@ -15,9 +15,9 @@ Auth: API key only (moo_sk…). JWT is not accepted.
 
 ${nsBlock}
 
-Async ingest:
-1. memoo_create_episode → returns job_id when queued
-2. Poll memoo_get_job_status(job_id) until completed or failed
+Async ingest (always — no sync create):
+1. memoo_create_episode → always returns job_id (HTTP 202)
+2. Poll memoo_get_job_status(job_id) until completed or failed; episode_id is on the completed job, not the create response
 3. Always summarize before create. Word max is Memoo API entitlement episode_content_words (plan-based; config fallback ~1200). Prefer ≤300 words. On 413, summarize further and retry.
 
 Read tools: search, fetch, memoo_list_episodes, memoo_search, memoo_ask, memoo_graph_traverse, memoo_temporal_query${ns ? "" : ", memoo_list_namespaces"}.
@@ -34,6 +34,6 @@ export const WORKFLOW_DOC = `# Memoo MCP workflow
 1. Ensure MEMOO_API_KEY is set (prefix moo_sk).
 2. Set --memo-namespace (UUID or name). Gateway resolves via GET /api/v1/namespaces/{id} (detail), not list.
 3. Explore with memoo_search / memoo_ask / memoo_graph_traverse using the resolved default namespace.
-4. Ingest only summarized episodes; poll jobs after create. Word limit is plan entitlement episode_content_words (API-enforced).
+4. Ingest only summarized episodes; create is always async — poll memoo_get_job_status after every create. Word limit is plan entitlement episode_content_words (API-enforced).
 5. Call memoo_list_namespaces only when you need to discover other namespaces.
 `;

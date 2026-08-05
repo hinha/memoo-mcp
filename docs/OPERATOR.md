@@ -51,10 +51,12 @@ npm publish is **out of scope** for the rewrite; document `npx memoo-mcp@latest`
 - Resource `memoo://health` and HTTP `GET /health` (gateway liveness).
 - Stdio startup requires upstream `GET /health/detail` with `status: healthy`.
 
-## Async ingest
+## Async ingest (always)
 
-1. `memoo_create_episode` → `{ job_id, status: "queued", next_action: "poll_with_memoo_get_job_status" }`
-2. Poll `memoo_get_job_status` until `completed` / `failed`
+Memoo API episode create is async-only (HTTP 202 + `job_id`). There is no sync `episode_id` create path.
+
+1. `memoo_create_episode` → `{ job_id, status: "queued", next_action: "poll_with_memoo_get_job_status" }` (MCP errors if `job_id` missing)
+2. Poll `memoo_get_job_status` until `completed` / `failed`; completed job carries `result_episode_id`
 3. Word limit is **not** hardcoded in MCP. Memoo API enforces `episode_content_words` (auth plan entitlement via auth-sdks; config fallback `namespaces.episode.max_content_words`, default 1200). On HTTP 413, agent should summarize and retry.
 
 ## HTTP sessions (memory)

@@ -80,7 +80,7 @@ memoo_temporal_query:
 
 1. Summarize first (prefer ≤300 words). Hard max is plan entitlement `episode_content_words` (API-enforced).
 2. Call **only** `memoo_create_episode` via Memoo MCP — do not invent curl/REST bypasses.
-3. Expect a quick `job_id` response (async). Then poll `memoo_get_job_status` until `completed` / `failed` (ingest itself can take minutes).
+3. Create is **always async**: expect `job_id` immediately (no `episode_id` on create). Poll `memoo_get_job_status` until `completed` / `failed` (ingest itself can take minutes).
 4. On HTTP 413 / content too long → summarize further and retry.
 5. Prefer the session default namespace (name). Do not pass raw UUIDs in tool args unless the host has no default.
 6. If create fails, retry the MCP tool — do not shell out to the REST API or print API keys.
@@ -143,3 +143,4 @@ Present findings as:
 - Ingesting raw transcripts without summarizing
 - Bypassing MCP with ad-hoc curl/node REST (causes wrong paths, leaked keys, SSL confusion)
 - Treating a slow ingest job as failure before polling `memoo_get_job_status` to completion
+- Expecting `episode_id` from `memoo_create_episode` (create always returns `job_id`; episode id is on the completed job)

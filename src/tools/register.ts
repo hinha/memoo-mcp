@@ -324,17 +324,17 @@ export function registerTools(server: McpServer, runtime: Runtime): void {
     "memoo_create_episode",
     {
       title: "Create Episode",
-      description: `Create/ingest an episode in a namespace.
+      description: `Create/ingest an episode in a namespace (always async).
 
 IMPORTANT: Before calling this tool, you MUST summarize the content to key facts, decisions, entities, and relationships. Do NOT send raw/transcribed content verbatim.
 
-Word limit is enforced by the Memoo API (entitlement dimension episode_content_words from the caller's plan; config fallback typically 1200). Plan catalog examples: free≈300, lite/pro≈500, max≈5000. Prefer ≤300 words for sync-friendly ingest. If the API returns 413 / "Content too long", summarize further and retry.
+Word limit is enforced by the Memoo API (entitlement dimension episode_content_words from the caller's plan; config fallback typically 1200). Plan catalog examples: free≈300, lite/pro≈500, max≈5000. Prefer ≤300 words. If the API returns 413 / "Content too long", summarize further and retry.
 
-ASYNC OPERATION: When async ingest is enabled on Memoo, this returns a job_id quickly. You MUST then call memoo_get_job_status until 'completed' or 'failed' (entity extraction may take 1–3+ minutes). Do not bypass MCP with raw HTTP.
+ALWAYS ASYNC: Memoo returns HTTP 202 with job_id immediately. You MUST then call memoo_get_job_status until 'completed' or 'failed' (entity extraction may take 1–3+ minutes). Do not expect episode_id from this tool. Do not bypass MCP with raw HTTP.
 
-1. memoo_create_episode → job_id
+1. memoo_create_episode → job_id (queued)
 2. memoo_get_job_status(job_id) until completed/failed
-3. If completed, result may include episode_id`,
+3. If completed, job detail may include result_episode_id`,
       inputSchema: {
         namespace: z.string().optional().describe(nsDesc(config.defaultNamespace)),
         name: z
@@ -377,17 +377,19 @@ ASYNC OPERATION: When async ingest is enabled on Memoo, this returns a job_id qu
         });
         const jobId =
           typeof out.job_id === "string" ? out.job_id.trim() : "";
-        if (jobId) {
-          return textResult({
-            job_id: jobId,
-            status: "queued",
-            message:
-              "Episode ingestion queued. Poll memoo_get_job_status to track progress.",
-            check_url: `/api/v1/jobs/${jobId}/detail`,
-            next_action: "poll_with_memoo_get_job_status",
-          });
+        if (!jobId) {
+          throw new Error(
+            "Memoo create episode did not return job_id (async ingest required). Check async_ingestion / job queue on memoo-api.",
+          );
         }
-        return textResult(out);
+        return textResult({
+          job_id: jobId,
+          status: "queued",
+          message:
+            "Episode ingestion queued. Poll memoo_get_job_status until completed or failed (may take minutes).",
+          check_url: `/api/v1/jobs/${jobId}/detail`,
+          next_action: "poll_with_memoo_get_job_status",
+        });
       } catch (err) {
         return errorResult(err);
       }
@@ -399,11 +401,11 @@ ASYNC OPERATION: When async ingest is enabled on Memoo, this returns a job_id qu
     {
       title: "Get Job Status",
       description:
-        "Get the status of an async job by ID (for fire-and-forget operations)",
+        "Poll an episode ingest job by ID. Required after every memoo_create_episode (always async).",
       inputSchema: {
         job_id: z
           .string()
-          .describe("Job UUID from async episode creation"),
+          .describe("Job UUID returned by memoo_create_episode"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
