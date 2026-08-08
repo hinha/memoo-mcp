@@ -1,11 +1,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { buildServerInstructions } from "./instructions.js";
+import { getPackageName, getPackageVersion } from "./package-meta.js";
 import type { Runtime } from "./runtime.js";
-import { registerTools, registerResources } from "./tools/register.js";
 import { registerMeta } from "./tools/meta.js";
+import { registerResources, registerTools } from "./tools/register.js";
 
-export const SERVER_NAME = "memoo-mcp";
-export const SERVER_VERSION = "1.0.0";
+export const SERVER_NAME = getPackageName();
+export const SERVER_VERSION = getPackageVersion();
 
 export function buildMcpServer(runtime: Runtime): McpServer {
   const server = new McpServer(

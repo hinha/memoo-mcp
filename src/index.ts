@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { matchInfoCommand, runInfoCommand } from "./cli/info.js";
 import { loadConfig, validateApiKey } from "./config.js";
-import { createRuntime } from "./runtime.js";
 import { buildMcpServer } from "./create-mcp.js";
 import { log } from "./logging.js";
+import { createRuntime } from "./runtime.js";
 
 function wantsHttp(argv: string[]): boolean {
   if (argv.includes("--stdio")) return false;
@@ -22,8 +23,7 @@ async function startStdio(argv: string[]): Promise<void> {
   });
   try {
     const health = await runtime.client.checkHealth();
-    const status =
-      typeof health.status === "string" ? health.status : "unknown";
+    const status = typeof health.status === "string" ? health.status : "unknown";
     if (status !== "healthy") {
       throw new Error(`upstream not healthy: ${JSON.stringify(health)}`);
     }
@@ -49,10 +49,7 @@ async function startStdio(argv: string[]): Promise<void> {
   });
   let namespaceName: string;
   try {
-    namespaceName = await runtime.client.resolveNamespaceName(
-      runtime.apiKey,
-      namespaceIdentifier,
-    );
+    namespaceName = await runtime.client.resolveNamespaceName(runtime.apiKey, namespaceIdentifier);
   } catch (err) {
     log.error("namespace validation failed", {
       error: err instanceof Error ? err.message : String(err),
@@ -77,6 +74,11 @@ async function startStdio(argv: string[]): Promise<void> {
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
+  const info = matchInfoCommand(argv);
+  if (info) {
+    const code = await runInfoCommand(info);
+    process.exit(code);
+  }
   if (wantsHttp(argv)) {
     const { startHttpServer } = await import("./http/server.js");
     await startHttpServer(argv);
