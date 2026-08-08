@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-/**
- * Collect src/**/*.test.ts and run via tsx --test.
- * Avoids shell/c8 glob quirks on Linux CI (quoted ** treated as literal path).
- */
+// Collect src/**/*.test.ts and run via tsx --test.
+// Avoids shell/c8 glob quirks on Linux CI (quoted globs treated as literal paths).
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
