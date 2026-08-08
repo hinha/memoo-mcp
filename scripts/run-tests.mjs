@@ -1,11 +1,10 @@
 #!/usr/bin/env node
+import { spawn } from "node:child_process";
 // Collect src/**/*.test.ts and run via tsx --test.
 // Avoids shell/c8 glob quirks on Linux CI (quoted globs treated as literal paths).
 import { readdir } from "node:fs/promises";
-import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const srcRoot = join(root, "src");
