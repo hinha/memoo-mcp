@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { loadConfig, validateApiKey, type MemooConfig } from "../config.js";
-import { createRuntime } from "../runtime.js";
-import { log } from "../logging.js";
+import { loadConfig, type MemooConfig, validateApiKey } from "../config.js";
 import { buildMcpServer } from "../create-mcp.js";
+import { log } from "../logging.js";
+import { createRuntime } from "../runtime.js";
 
 /** Fixed Streamable HTTP mount — not configurable (stdio ignores this). */
 export const HTTP_MCP_PATH = "/mcp";
@@ -22,7 +22,7 @@ type TransportEntry = {
   lastUsed: number;
 };
 
-function extractBearerToken(authHeader: string | undefined): string {
+export function extractBearerToken(authHeader: string | undefined): string {
   const parts = (authHeader ?? "").trim().split(/\s+/);
   if (parts.length !== 2 || parts[0].toLowerCase() !== "bearer") {
     throw new Error("authorization header must be 'Bearer <moo_sk...>'");
@@ -30,7 +30,7 @@ function extractBearerToken(authHeader: string | undefined): string {
   return parts[1];
 }
 
-function isOriginAllowed(origin: string, allowlist: string[]): boolean {
+export function isOriginAllowed(origin: string, allowlist: string[]): boolean {
   const o = origin.trim();
   if (!o) return true;
   if (allowlist.length === 0) {
@@ -53,7 +53,7 @@ function isOriginAllowed(origin: string, allowlist: string[]): boolean {
   return false;
 }
 
-function parseAllowedOrigins(argv: string[]): string[] {
+export function parseAllowedOrigins(argv: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--allowed-origin" && argv[i + 1]) {
@@ -72,10 +72,7 @@ function parseAllowedOrigins(argv: string[]): string[] {
   return out;
 }
 
-function resolveHttpApiKey(
-  req: import("express").Request,
-  config: MemooConfig,
-): string {
+export function resolveHttpApiKey(req: import("express").Request, config: MemooConfig): string {
   const header = req.headers.authorization;
   if (header) {
     const token = extractBearerToken(header);
@@ -89,6 +86,7 @@ function resolveHttpApiKey(
   throw new Error("authorization header must be 'Bearer <moo_sk...>'");
 }
 
+/* c8 ignore start — HTTP listen loop / session lifecycle covered by manual/operator checks */
 async function disposeSession(
   transports: Record<string, TransportEntry>,
   sid: string,
@@ -111,9 +109,7 @@ async function disposeSession(
   }
 }
 
-export async function startHttpServer(
-  argv: string[] = process.argv.slice(2),
-): Promise<void> {
+export async function startHttpServer(argv: string[] = process.argv.slice(2)): Promise<void> {
   const config = loadConfig(argv);
   const allowedOrigins = parseAllowedOrigins(argv);
   const host = config.host;
@@ -173,10 +169,7 @@ export async function startHttpServer(
     if (origin) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
-      res.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, DELETE, OPTIONS",
-      );
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
       res.setHeader(
         "Access-Control-Allow-Headers",
         "Authorization, Content-Type, Accept, Mcp-Session-Id, MCP-Protocol-Version",
@@ -198,17 +191,12 @@ export async function startHttpServer(
     });
   });
 
-  const mcpHandler = async (
-    req: import("express").Request,
-    res: import("express").Response,
-  ) => {
+  const mcpHandler = async (req: import("express").Request, res: import("express").Response) => {
     let apiKey: string;
     try {
       apiKey = resolveHttpApiKey(req, config);
     } catch (err) {
-      res
-        .status(401)
-        .send(err instanceof Error ? err.message : "unauthorized");
+      res.status(401).send(err instanceof Error ? err.message : "unauthorized");
       return;
     }
 
@@ -286,7 +274,6 @@ export async function startHttpServer(
   const mcpUrl = `http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}${mcpPath}`;
   log.info("memoo-mcp HTTP listening", { host, port, mcp_url: mcpUrl });
   console.error(`[memoo-mcp] MCP URL: ${mcpUrl}`);
-  console.error(
-    "[memoo-mcp] Auth: Authorization: Bearer moo_sk… (or MEMOO_API_KEY)",
-  );
+  console.error("[memoo-mcp] Auth: Authorization: Bearer moo_sk… (or MEMOO_API_KEY)");
 }
+/* c8 ignore stop */

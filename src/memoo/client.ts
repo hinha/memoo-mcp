@@ -75,10 +75,7 @@ export class MemooClient {
       });
       const text = await res.text();
       if (res.status >= 400) {
-        throw new MemooApiError(
-          res.status,
-          parseErrorMessage(text) || res.statusText,
-        );
+        throw new MemooApiError(res.status, parseErrorMessage(text) || res.statusText);
       }
       if (!text) return undefined as T;
       return JSON.parse(text) as T;
@@ -104,10 +101,7 @@ export class MemooClient {
       });
       const text = await res.text();
       if (res.status >= 400) {
-        throw new MemooApiError(
-          res.status,
-          parseErrorMessage(text) || res.statusText,
-        );
+        throw new MemooApiError(res.status, parseErrorMessage(text) || res.statusText);
       }
       return text ? (JSON.parse(text) as JsonObject) : {};
     } finally {
@@ -125,21 +119,14 @@ export class MemooClient {
   /** GET /api/v1/namespaces/{id|name} — detail by UUID or name (not list). */
   getNamespace(apiKey: string, identifier: string) {
     const id = identifier.trim();
-    return this.doJSON<JsonObject>(
-      apiKey,
-      "GET",
-      `/api/v1/namespaces/${encodeURIComponent(id)}`,
-    );
+    return this.doJSON<JsonObject>(apiKey, "GET", `/api/v1/namespaces/${encodeURIComponent(id)}`);
   }
 
   /**
    * Resolve UUID or name to the canonical namespace name via detail endpoint.
    * Prefer this over listNamespaces for boot / default-namespace setup.
    */
-  async resolveNamespaceName(
-    apiKey: string,
-    identifier: string,
-  ): Promise<string> {
+  async resolveNamespaceName(apiKey: string, identifier: string): Promise<string> {
     const id = identifier.trim();
     if (!id) throw new Error("namespace identifier is empty");
     try {
@@ -156,9 +143,7 @@ export class MemooClient {
         );
       }
       if (err instanceof MemooApiError && err.statusCode === 401) {
-        throw new Error(
-          "API key validation failed: unauthorized - check your API key",
-        );
+        throw new Error("API key validation failed: unauthorized - check your API key");
       }
       throw err;
     }
@@ -200,11 +185,7 @@ export class MemooClient {
     );
   }
 
-  ask(
-    apiKey: string,
-    ns: string,
-    body: { query: string; limit?: number; use_reranker?: boolean },
-  ) {
+  ask(apiKey: string, ns: string, body: { query: string; limit?: number; use_reranker?: boolean }) {
     return this.doJSON<JsonObject>(
       apiKey,
       "POST",
@@ -214,11 +195,7 @@ export class MemooClient {
     );
   }
 
-  graphTraverse(
-    apiKey: string,
-    ns: string,
-    body: { entity_uuid: string; max_hops?: number },
-  ) {
+  graphTraverse(apiKey: string, ns: string, body: { entity_uuid: string; max_hops?: number }) {
     return this.doJSON<JsonObject>(
       apiKey,
       "POST",
@@ -271,11 +248,7 @@ export class MemooClient {
   }
 
   getJob(apiKey: string, jobId: string) {
-    return this.doJSON<JsonObject>(
-      apiKey,
-      "GET",
-      `/api/v1/jobs/${encodeURIComponent(jobId)}`,
-    );
+    return this.doJSON<JsonObject>(apiKey, "GET", `/api/v1/jobs/${encodeURIComponent(jobId)}`);
   }
 
   /**

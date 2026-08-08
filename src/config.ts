@@ -12,10 +12,7 @@ export type MemooConfig = {
 };
 
 function loadDotEnv(): void {
-  const candidates = [
-    resolve(process.cwd(), ".env"),
-    resolve(import.meta.dirname, "../../.env"),
-  ];
+  const candidates = [resolve(process.cwd(), ".env"), resolve(import.meta.dirname, "../../.env")];
   for (const file of candidates) {
     if (!existsSync(file)) continue;
     const text = readFileSync(file, "utf8");
@@ -95,10 +92,7 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): MemooConfig 
     process.env.MEMOO_API_KEY_PREFIX,
     "moo_sk",
   );
-  const apiKey = firstNonEmpty(
-    parseArg(argv, "--api-key"),
-    process.env.MEMOO_API_KEY,
-  );
+  const apiKey = firstNonEmpty(parseArg(argv, "--api-key"), process.env.MEMOO_API_KEY);
   const baseUrl = firstNonEmpty(
     parseArg(argv, "--memoo-base-url"),
     process.env.MEMOO_BASE_URL,
@@ -140,7 +134,5 @@ export function resolveNamespace(
   if (p) return p;
   const d = defaultNamespace?.trim() ?? "";
   if (d) return d;
-  throw new Error(
-    "namespace is required — set MEMOO_NAMESPACE or pass namespace in the tool call",
-  );
+  throw new Error("namespace is required — set MEMOO_NAMESPACE or pass namespace in the tool call");
 }

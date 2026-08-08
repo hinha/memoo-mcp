@@ -2,14 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { resolveNamespace } from "../config.js";
+import { log } from "../logging.js";
 import { MemooApiError } from "../memoo/errors.js";
 import type { JsonObject } from "../memoo/types.js";
-import { log } from "../logging.js";
 import type { Runtime } from "../runtime.js";
 
 function textResult(payload: unknown) {
-  const text =
-    typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+  const text = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
   return { content: [{ type: "text" as const, text }] };
 }
 
@@ -23,7 +22,7 @@ function errorResult(err: unknown) {
   };
 }
 
-function mapApiError(err: unknown): Error {
+export function mapApiError(err: unknown): Error {
   if (err instanceof MemooApiError) {
     switch (err.statusCode) {
       case 401:
@@ -71,15 +70,13 @@ export function registerTools(server: McpServer, runtime: Runtime): void {
     if (!key) throw new Error("missing API key (set MEMOO_API_KEY or Bearer)");
     return key;
   };
-  const ns = (provided?: string) =>
-    resolveNamespace(provided, config.defaultNamespace);
+  const ns = (provided?: string) => resolveNamespace(provided, config.defaultNamespace);
 
   server.registerTool(
     "search",
     {
       title: "Search",
-      description:
-        "Compatibility search tool for MCP hosts (read-only Memoo knowledge search).",
+      description: "Compatibility search tool for MCP hosts (read-only Memoo knowledge search).",
       inputSchema: {
         namespace: z.string().optional().describe(nsDesc(config.defaultNamespace)),
         query: z.string().describe("Natural language search query"),
@@ -117,8 +114,7 @@ export function registerTools(server: McpServer, runtime: Runtime): void {
     "fetch",
     {
       title: "Fetch",
-      description:
-        "Compatibility fetch tool for MCP hosts (fetch full episode by ID).",
+      description: "Compatibility fetch tool for MCP hosts (fetch full episode by ID).",
       inputSchema: {
         namespace: z.string().optional().describe(nsDesc(config.defaultNamespace)),
         id: z.string().describe("Episode ID"),
@@ -151,11 +147,7 @@ export function registerTools(server: McpServer, runtime: Runtime): void {
     },
     async (args) => {
       try {
-        const raw = await client.listNamespaces(
-          apiKey(),
-          args.limit ?? 20,
-          args.offset ?? 0,
-        );
+        const raw = await client.listNamespaces(apiKey(), args.limit ?? 20, args.offset ?? 0);
         const namespaces = normalizeNamespaces(raw);
         return textResult({ namespaces, count: namespaces.length });
       } catch (err) {
@@ -337,10 +329,7 @@ ALWAYS ASYNC: Memoo returns HTTP 202 with job_id immediately. You MUST then call
 3. If completed, job detail may include result_episode_id`,
       inputSchema: {
         namespace: z.string().optional().describe(nsDesc(config.defaultNamespace)),
-        name: z
-          .string()
-          .optional()
-          .describe("Short descriptive title for this episode"),
+        name: z.string().optional().describe("Short descriptive title for this episode"),
         content: z
           .string()
           .describe(
@@ -350,10 +339,7 @@ ALWAYS ASYNC: Memoo returns HTTP 202 with job_id immediately. You MUST then call
           .string()
           .optional()
           .describe("Origin of the content (e.g. 'conversation', 'document', 'github')"),
-        source_id: z
-          .string()
-          .optional()
-          .describe("Unique identifier from the source system"),
+        source_id: z.string().optional().describe("Unique identifier from the source system"),
         metadata: z.record(z.string(), z.string()).optional(),
       },
       annotations: {
@@ -375,8 +361,7 @@ ALWAYS ASYNC: Memoo returns HTTP 202 with job_id immediately. You MUST then call
           source_id: args.source_id,
           metadata: args.metadata ?? {},
         });
-        const jobId =
-          typeof out.job_id === "string" ? out.job_id.trim() : "";
+        const jobId = typeof out.job_id === "string" ? out.job_id.trim() : "";
         if (!jobId) {
           throw new Error(
             "Memoo create episode did not return job_id (async ingest required). Check async_ingestion / job queue on memoo-api.",
@@ -403,9 +388,7 @@ ALWAYS ASYNC: Memoo returns HTTP 202 with job_id immediately. You MUST then call
       description:
         "Poll an episode ingest job by ID. Required after every memoo_create_episode (always async).",
       inputSchema: {
-        job_id: z
-          .string()
-          .describe("Job UUID returned by memoo_create_episode"),
+        job_id: z.string().describe("Job UUID returned by memoo_create_episode"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -475,11 +458,7 @@ export function registerResources(server: McpServer, runtime: Runtime): void {
           {
             uri: uri.href,
             mimeType: "application/json",
-            text: JSON.stringify(
-              { namespaces, count: namespaces.length },
-              null,
-              2,
-            ),
+            text: JSON.stringify({ namespaces, count: namespaces.length }, null, 2),
           },
         ],
       };
