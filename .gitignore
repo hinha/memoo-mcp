@@ -1,6 +1,7 @@
 # dependencies
 /node_modules
 docs/superpower/*
+docs/superpowers/*
 
 # build
 /dist
@@ -8,6 +9,7 @@ docs/superpower/*
 
 # testing
 /coverage
+*.tgz
 
 # env / secrets
 .env
