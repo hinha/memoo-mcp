@@ -46,8 +46,7 @@ export function registerMeta(server: McpServer): void {
     "memoo_explore",
     {
       title: "Explore knowledge graph",
-      description:
-        "Guide for exploring a Memoo namespace with search, ask, and graph tools",
+      description: "Guide for exploring a Memoo namespace with search, ask, and graph tools",
       argsSchema: {
         topic: z.string().describe("Topic or entity to explore"),
       },

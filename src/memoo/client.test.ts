@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { MemooClient } from "./client.js";
 import { MemooApiError } from "./errors.js";
 
@@ -7,12 +7,7 @@ function mockFetch(
   handler: (url: string, init?: RequestInit) => Promise<Response> | Response,
 ): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url =
-      typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.href
-          : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     return handler(url, init);
   }) as typeof fetch;
 }
@@ -27,9 +22,7 @@ describe("MemooClient", () => {
       apiKeyPrefix: "moo_sk",
       fetchImpl: mockFetch((url, init) => {
         seenUrl = url;
-        seenAuth = String(
-          (init?.headers as Record<string, string>)?.Authorization ?? "",
-        );
+        seenAuth = String((init?.headers as Record<string, string>)?.Authorization ?? "");
         return new Response(JSON.stringify({ results: [{ name: "ns1" }] }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -50,10 +43,7 @@ describe("MemooClient", () => {
       apiKeyPrefix: "moo_sk",
       fetchImpl: mockFetch(() => new Response("{}")),
     });
-    await assert.rejects(
-      () => client.listNamespaces("bad_key"),
-      /must start with prefix/,
-    );
+    await assert.rejects(() => client.listNamespaces("bad_key"), /must start with prefix/);
   });
 
   it("maps 4xx to MemooApiError", async () => {
@@ -62,8 +52,7 @@ describe("MemooClient", () => {
       timeoutMs: 5_000,
       apiKeyPrefix: "moo_sk",
       fetchImpl: mockFetch(
-        () =>
-          new Response(JSON.stringify({ message: "nope" }), { status: 401 }),
+        () => new Response(JSON.stringify({ message: "nope" }), { status: 401 }),
       ),
     });
     await assert.rejects(
@@ -111,10 +100,7 @@ describe("MemooClient", () => {
       apiKeyPrefix: "moo_sk",
       fetchImpl: mockFetch((url, init) => {
         assert.match(url, /\/health\/detail$/);
-        assert.equal(
-          (init?.headers as Record<string, string>)?.Authorization,
-          undefined,
-        );
+        assert.equal((init?.headers as Record<string, string>)?.Authorization, undefined);
         return new Response(JSON.stringify({ status: "healthy" }), {
           status: 200,
         });
@@ -146,10 +132,7 @@ describe("MemooClient", () => {
     });
     const name = await client.resolveNamespaceName("moo_sk_x", uuid);
     assert.equal(name, "prod-kg");
-    assert.match(
-      seenUrl,
-      /\/api\/v1\/namespaces\/0b00322d-f6ed-45b7-a2e8-b7059f71de34$/,
-    );
+    assert.match(seenUrl, /\/api\/v1\/namespaces\/0b00322d-f6ed-45b7-a2e8-b7059f71de34$/);
     assert.doesNotMatch(seenUrl, /\/namespaces\?/);
   });
 
@@ -167,5 +150,64 @@ describe("MemooClient", () => {
     await client.validateApiKeyWithUpstream("moo_sk_x", "ns-a");
     assert.match(seenUrl, /\/api\/v1\/namespaces\/ns-a$/);
     assert.doesNotMatch(seenUrl, /limit=/);
+  });
+
+  it("covers remaining REST helpers", async () => {
+    const seen: string[] = [];
+    const client = new MemooClient({
+      baseUrl: "https://memoo.example",
+      timeoutMs: 5_000,
+      apiKeyPrefix: "moo_sk",
+      fetchImpl: mockFetch((url, init) => {
+        seen.push(`${init?.method ?? "GET"} ${url}`);
+        if ((init?.method ?? "GET") === "DELETE") {
+          return new Response("", { status: 200 });
+        }
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }),
+    });
+    const key = "moo_sk_x";
+    await client.search(key, "ns", { query: "q", limit: 5 });
+    await client.ask(key, "ns", { query: "q" });
+    await client.graphTraverse(key, "ns", { entity_uuid: "e1" });
+    await client.temporalQuery(key, "ns", { query: "q", at_time: 1 });
+    await client.createEpisode(key, "ns", { content: "c" });
+    await client.getEpisode(key, "ns", "ep1");
+    await client.listEpisodes(key, "ns", 1, 10);
+    await client.getJob(key, "job-1");
+    await client.deleteEpisode(key, "ns", "ep1");
+    await client.validateApiKeyWithUpstream(key, null);
+    assert.ok(seen.some((s) => s.includes("/search")));
+    assert.ok(seen.some((s) => s.includes("/ask")));
+    assert.ok(seen.some((s) => s.includes("/graph/traverse")));
+    assert.ok(seen.some((s) => s.includes("/graph/temporal")));
+    assert.ok(seen.some((s) => s.includes("/episodes")));
+    assert.ok(seen.some((s) => s.includes("/jobs/")));
+    assert.ok(seen.some((s) => s.startsWith("DELETE")));
+    assert.ok(seen.some((s) => s.includes("limit=1")));
+  });
+
+  it("parses nested error messages and empty bodies", async () => {
+    const clientErr = new MemooClient({
+      baseUrl: "https://memoo.example",
+      timeoutMs: 5_000,
+      apiKeyPrefix: "moo_sk",
+      fetchImpl: mockFetch(
+        () =>
+          new Response(JSON.stringify({ error: { message: "nested" } }), {
+            status: 400,
+          }),
+      ),
+    });
+    await assert.rejects(() => clientErr.listNamespaces("moo_sk_x"), /nested/);
+
+    const clientEmpty = new MemooClient({
+      baseUrl: "https://memoo.example",
+      timeoutMs: 5_000,
+      apiKeyPrefix: "moo_sk",
+      fetchImpl: mockFetch(() => new Response("", { status: 200 })),
+    });
+    const out = await clientEmpty.deleteEpisode("moo_sk_x", "ns", "ep");
+    assert.equal(out, undefined);
   });
 });
